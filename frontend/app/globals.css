@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* LIGHT MODE (Fallback / Default) */
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(0 0% 3.9%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(0 0% 3.9%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(0 0% 3.9%);
+  --primary: hsl(0 0% 9%);
+  --primary-foreground: hsl(0 0% 98%);
+  --secondary: hsl(0 0% 96.1%);
+  --secondary-foreground: hsl(0 0% 9%);
+  --muted: hsl(0 0% 96.1%);
+  --muted-foreground: hsl(0 0% 45.1%);
+  --accent: hsl(0 0% 96.1%);
+  --accent-foreground: hsl(0 0% 9%);
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 89.8%);
+  --input: hsl(0 0% 89.8%);
+  --ring: hsl(0 0% 3.9%);
+  --radius: 0.5rem;
+}
+
+.dark {
+  /* DARK MODE (Active Theme with Glass Effect) */
+  
+  /* Background is handled by the image in @layer base, 
+     but we set this to black as a fallback */
+  --background: hsl(0 0% 0%); 
+  
+  /* Pure White Text */
+  --foreground: hsl(0 0% 98%);
+
+  /* Glassy Cards: 3% Gray with 80% Opacity */
+  --card: hsl(0 0% 3% / 0.8);
+  --card-foreground: hsl(0 0% 98%);
+
+  /* Glassy Popups/Dropdowns */
+  --popover: hsl(0 0% 3% / 0.9);
+  --popover-foreground: hsl(0 0% 98%);
+
+  /* Vercel White Buttons */
+  --primary: hsl(0 0% 98%);
+  --primary-foreground: hsl(0 0% 9%);
+
+  /* Subtly transparent secondary elements */
+  --secondary: hsl(0 0% 12% / 0.8);
+  --secondary-foreground: hsl(0 0% 98%);
+
+  --muted: hsl(0 0% 12% / 0.8);
+  --muted-foreground: hsl(0 0% 60%);
+
+  --accent: hsl(0 0% 12% / 0.8);
+  --accent-foreground: hsl(0 0% 98%);
+
+  --destructive: hsl(0 62.8% 30.6%);
+  --destructive-foreground: hsl(0 0% 98%);
+
+  /* Dark Borders */
+  --border: hsl(0 0% 20%);
+  --input: hsl(0 0% 20% / 0.8);
+  --ring: hsl(0 0% 80%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  
+  body {
+    @apply text-foreground antialiased;
+    
+    /* BACKGROUND IMAGE SETUP */
+    background-color: black; /* Fallback color */
+    
+    background-image: 
+      /* The Dark Overlay (Gradient from 85% black to 70% black) */
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.7)),
+      /* The Image */
+      url('/bg.png');
+
+    /* Ensure image covers screen and stays fixed while scrolling */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    
+    /* Ensure font matches the clean SaaS look */
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  }
+}

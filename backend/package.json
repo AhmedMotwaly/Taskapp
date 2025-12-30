@@ -1,0 +1,44 @@
+{
+  "name": "autobuy-guard-backend",
+  "version": "1.0.0",
+  "description": "Backend for AutoBuy Guard SaaS - Price tracking and restock alerts",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "test": "jest --coverage"
+  },
+  "keywords": [
+    "saas",
+    "price-tracking",
+    "alerts"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-sns": "^3.954.0",
+    "aws-sdk": "^2.1693.0",
+    "axios": "^1.13.2",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "cheerio": "^1.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "next-intl": "^4.6.1",
+    "nodemailer": "^7.0.11",
+    "puppeteer": "^24.33.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "stripe": "^13.11.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.1",
+    "supertest": "^6.3.3"
+  }
+}
