@@ -3,6 +3,7 @@ const cors = require('cors');
 
 // --- 1. IMPORT YOUR PROJECT'S AUTH TOOL ---
 // Test deployment pipeline
+// Deployment test - GitHub Actions workflow
 // This ensures we verify tokens EXACTLY the same way login does
 // (It handles the Secret Key and decoding automatically)
 const { verifyToken } = require('./src/utils/jwt'); 
