@@ -209,6 +209,6 @@ notify:
           fi
           
           aws sns publish \
-            --topic-arn "arn:aws:sns:eu-central-1:050752651038:taskapp-deployment-notifications" \
+            --topic-arn "${{ secrets.SNS_TOPIC_ARN }}" \
             --subject "$SUBJECT" \
             --message "$MESSAGE"
