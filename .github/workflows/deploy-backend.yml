@@ -171,3 +171,44 @@ jobs:
         run: |
           echo "🔄 Deployment failed - rollback initiated"
           echo "Previous instances remain active"
+
+notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    if: always()
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Send SNS notification
+        run: |
+          if [ "${{ needs.build-and-deploy.result }}" = "success" ]; then
+            MESSAGE="✅ Backend deployment SUCCEEDED
+            
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref_name }}
+            Triggered by: ${{ github.actor }}
+            
+            View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            SUBJECT="✅ Deployment Success - TaskApp Backend"
+          else
+            MESSAGE="❌ Backend deployment FAILED
+            
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref_name }}
+            Triggered by: ${{ github.actor }}
+            
+            View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            SUBJECT="❌ Deployment Failed - TaskApp Backend"
+          fi
+          
+          aws sns publish \
+            --topic-arn "arn:aws:sns:eu-central-1:050752651038:taskapp-deployment-notifications" \
+            --subject "$SUBJECT" \
+            --message "$MESSAGE"
