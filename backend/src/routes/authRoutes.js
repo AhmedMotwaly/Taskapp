@@ -12,6 +12,9 @@ const router = express.Router();
 // PUBLIC ROUTES
 // ===========================
 router.post('/signup', authController.signup);
+router.post('/login', authController.login);                    // <-- ADD THIS
+router.post('/verify-email', authController.verifyEmail);       // <-- ADD THIS
+router.post('/resend-code', authController.resendVerificationCode); // <-- ADD THIS
 
 // ===========================
 // AUTH MIDDLEWARE
@@ -49,8 +52,8 @@ router.get('/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const { password, ...userWithoutPassword } = user;
-    res.json(userWithoutPassword);
+    const { password, verificationCode, verificationCodeExpires, ...userWithoutSensitiveData } = user;
+    res.json(userWithoutSensitiveData);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch user' });
@@ -82,8 +85,8 @@ router.put('/profile', authenticateToken, async (req, res) => {
 
     await putItem(TABLES.USERS, updatedUser);
 
-    const { password, ...userWithoutPassword } = updatedUser;
-    res.json(userWithoutPassword);
+    const { password, verificationCode, verificationCodeExpires, ...userWithoutSensitiveData } = updatedUser;
+    res.json(userWithoutSensitiveData);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to update profile' });

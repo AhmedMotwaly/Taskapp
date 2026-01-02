@@ -22,9 +22,40 @@ const scrapeAmazon = async (page) => {
 
     const variants = [];
 
+    // ========== HELPER: Check if value is pagination/noise ==========
+    const isPaginationOrNoise = (val) => {
+      if (!val) return true;
+      
+      const lowerVal = val.toLowerCase().trim();
+      
+      // Exact matches to skip
+      const skipExact = [
+        'previous', 'next', 'prev', 'back', 'forward',
+        '←', '→', '«', '»', '<', '>', '...', 
+        '←previous', 'next→', '← previous', 'next →',
+        'show more', 'see more', 'view all', 'expand',
+        'collapse', 'less', 'more'
+      ];
+      
+      if (skipExact.includes(lowerVal)) return true;
+      
+      // Contains navigation arrows
+      if (/[←→«»]/.test(val)) return true;
+      
+      // Is just a number (page number)
+      if (/^\d+$/.test(val.trim())) return true;
+      
+      // Contains "previous" or "next" anywhere
+      if (lowerVal.includes('previous') || lowerVal.includes('next')) return true;
+      
+      // Is too short (single character that's not a size like S, M, L)
+      if (val.length === 1 && !/^[SMLX]$/i.test(val)) return true;
+      
+      return false;
+    };
+
     // ========== SIZE EXTRACTION ==========
     // Strategy 1: Inline Twister Button Toggles (Amazon.de Fashion)
-    // This targets the .a-button-toggle-group inside the size expander
     const sizeExpander = document.querySelector('#inline-twister-expander-content-size_name');
     if (sizeExpander) {
       const buttonGroup = sizeExpander.querySelector('.a-button-toggle-group') || 
@@ -34,22 +65,18 @@ const scrapeAmazon = async (page) => {
         const options = [];
         const seen = new Set();
         
-        // Find all button items (li elements containing the size buttons)
         const items = buttonGroup.querySelectorAll('li');
         
         items.forEach(li => {
           // Skip hidden elements
           if (li.classList.contains('aok-hidden')) return;
           
-          // The actual button text is usually in a span inside the button
-          const buttonInner = li.querySelector('.a-button-inner') || 
-                              li.querySelector('.a-button-text') ||
-                              li.querySelector('button') ||
-                              li;
+          // Skip pagination elements
+          if (li.classList.contains('a-pagination') || 
+              li.closest('.a-pagination')) return;
           
           let val = '';
           
-          // Try to get text from various places
           const textEl = li.querySelector('.a-button-text') || 
                          li.querySelector('.a-size-base') ||
                          li.querySelector('span[class*="text"]');
@@ -58,23 +85,22 @@ const scrapeAmazon = async (page) => {
             val = textEl.innerText?.trim();
           }
           
-          // Fallback: get all text content
           if (!val) {
             val = li.innerText?.trim();
           }
           
-          // Clean up the value
           if (val) {
-            // Remove price info and other noise
             val = val.split('\n')[0].trim();
             val = val.replace(/€[\d.,]+/g, '').trim();
             val = val.replace(/\(.*?\)/g, '').trim();
           }
           
+          // Skip pagination/noise
+          if (isPaginationOrNoise(val)) return;
+          
           if (val && !seen.has(val) && val.length < 30) {
             seen.add(val);
             
-            // Check availability from button classes
             const buttonEl = li.querySelector('.a-button') || li;
             const classes = (buttonEl.className || '').toLowerCase();
             const isUnavailable = classes.includes('unavailable') || 
@@ -103,16 +129,20 @@ const scrapeAmazon = async (page) => {
         const options = [];
         const seen = new Set();
         
-        // Look for all clickable size elements
         const sizeButtons = dimContainer.querySelectorAll('[data-csa-c-dimension-name="size_name"]') ||
                             dimContainer.querySelectorAll('.a-button') ||
                             dimContainer.querySelectorAll('li');
         
         sizeButtons.forEach(el => {
+          // Skip pagination
+          if (el.classList.contains('a-pagination') || el.closest('.a-pagination')) return;
+          
           let val = el.innerText?.trim()?.split('\n')[0];
           if (val) {
             val = val.replace(/€[\d.,]+/g, '').replace(/\(.*?\)/g, '').trim();
           }
+          
+          if (isPaginationOrNoise(val)) return;
           
           if (val && !seen.has(val) && val.length < 30) {
             seen.add(val);
@@ -138,6 +168,7 @@ const scrapeAmazon = async (page) => {
         
         sizeContainer.querySelectorAll('li').forEach(li => {
           if (li.classList.contains('aok-hidden')) return;
+          if (li.classList.contains('a-pagination') || li.closest('.a-pagination')) return;
           
           let val = li.innerText?.trim();
           if (!val) {
@@ -147,12 +178,15 @@ const scrapeAmazon = async (page) => {
           
           if (val) {
             val = val.replace(/\(.*?\)/g, '').trim();
-            if (val && !seen.has(val)) {
-              seen.add(val);
-              const cls = (li.className || '').toLowerCase();
-              const isUnavailable = cls.includes('unavailable') || cls.includes('grey');
-              options.push({ value: val, available: !isUnavailable });
-            }
+          }
+          
+          if (isPaginationOrNoise(val)) return;
+          
+          if (val && !seen.has(val)) {
+            seen.add(val);
+            const cls = (li.className || '').toLowerCase();
+            const isUnavailable = cls.includes('unavailable') || cls.includes('grey');
+            options.push({ value: val, available: !isUnavailable });
           }
         });
         
@@ -174,6 +208,7 @@ const scrapeAmazon = async (page) => {
           const val = opt.innerText?.trim();
           const optVal = opt.value;
           if (val && optVal !== '-1' && optVal !== '' && !val.toLowerCase().includes('select')) {
+            if (isPaginationOrNoise(val)) return;
             options.push({
               value: val.replace(/\s*-\s*(?:unavailable).*/i, '').trim(),
               available: !opt.disabled
@@ -196,24 +231,69 @@ const scrapeAmazon = async (page) => {
       const options = [];
       const seen = new Set();
       
-      const colorItems = colorExpander.querySelectorAll('li') ||
-                         colorExpander.querySelectorAll('.a-button');
+      // Be more specific: target only actual color swatches, not pagination
+      // Look for the button group or image swatches specifically
+      const buttonGroup = colorExpander.querySelector('.a-button-toggle-group') ||
+                          colorExpander.querySelector('#tp-inline-twister-dim-values-container') ||
+                          colorExpander.querySelector('ul:not(.a-pagination)');
+      
+      const colorItems = buttonGroup ? 
+                         buttonGroup.querySelectorAll('li:not(.a-pagination)') :
+                         colorExpander.querySelectorAll('li:not(.a-pagination)');
       
       colorItems.forEach(el => {
+        // Skip hidden and pagination elements
         if (el.classList.contains('aok-hidden')) return;
+        if (el.classList.contains('a-pagination')) return;
+        if (el.closest('.a-pagination')) return;
+        
+        // Check if this looks like a pagination container
+        const parentClasses = (el.parentElement?.className || '').toLowerCase();
+        if (parentClasses.includes('pagination')) return;
         
         let val = '';
+        
+        // For colors, prioritize image alt text (most reliable)
         const img = el.querySelector('img');
         if (img) {
           val = img.alt || img.title || '';
         }
+        
+        // Fallback to text, but be careful
         if (!val) {
-          val = el.innerText?.trim()?.split('\n')[0] || '';
+          // Look for specific text containers, not just any text
+          const textEl = el.querySelector('.a-button-text') || 
+                         el.querySelector('.a-size-base') ||
+                         el.querySelector('[class*="swatch-title"]');
+          if (textEl) {
+            val = textEl.innerText?.trim()?.split('\n')[0] || '';
+          }
         }
         
-        val = val.replace(/\(.*?\)/g, '').trim();
+        // Last resort: use innerText but be very careful
+        if (!val) {
+          // Only use innerText if the element looks like a color swatch
+          // (has specific classes or attributes)
+          if (el.querySelector('.a-button-inner') || 
+              el.hasAttribute('data-defaultasin') ||
+              el.querySelector('[data-csa-c-dimension-name="color_name"]')) {
+            val = el.innerText?.trim()?.split('\n')[0] || '';
+          }
+        }
         
-        if (val && !seen.has(val) && val.length < 50) {
+        // Clean up the value
+        val = val.replace(/\(.*?\)/g, '').trim();
+        val = val.replace(/€[\d.,]+/g, '').trim();
+        
+        // Skip pagination/noise
+        if (isPaginationOrNoise(val)) return;
+        
+        // Additional validation for colors
+        // Colors should be words, not symbols or very short strings
+        if (val.length < 2) return;
+        if (val.length > 50) return;
+        
+        if (val && !seen.has(val)) {
           seen.add(val);
           const cls = (el.className || '').toLowerCase();
           const isUnavailable = cls.includes('unavailable') || cls.includes('grey');
@@ -229,7 +309,6 @@ const scrapeAmazon = async (page) => {
 
     // ========== PRICE EXTRACTION ==========
     const getPrice = () => {
-      // Try multiple price selectors
       const priceSelectors = [
         '.a-price .a-offscreen',
         '#corePrice_feature_div .a-offscreen',
@@ -249,7 +328,6 @@ const scrapeAmazon = async (page) => {
         }
       }
       
-      // Fallback: combine whole and fraction
       const whole = document.querySelector('.a-price-whole');
       const frac = document.querySelector('.a-price-fraction');
       if (whole) {
