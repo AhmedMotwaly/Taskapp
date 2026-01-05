@@ -164,24 +164,39 @@ router.delete('/:id', async (req, res) => {
 });
 
 // ============================================
-// UPDATE TARGET PRICE
+// 🆕 UPDATE TARGET PRICE - ADD THIS NEW ROUTE
 // ============================================
 router.patch('/:id/target-price', async (req, res) => {
   try {
+    console.log('[ITEMS] 🔄 Update request:', req.params.id, req.body);
+    
     const { id } = req.params;
     const { targetPrice } = req.body;
     const userId = req.user.userId;
 
     // Validate input
-    if (typeof targetPrice !== 'number' || targetPrice < 0) {
+    const price = parseFloat(targetPrice);
+    if (isNaN(price) || price < 0) {
+      console.error('[ITEMS] ❌ Invalid price:', targetPrice);
       return res.status(400).json({ error: 'Target price must be a positive number' });
     }
 
+    console.log(`[ITEMS] 🔍 Fetching item ${id}...`);
+    
     // Verify ownership
     const item = await getItem(TABLES.ITEMS, { itemId: id });
-    if (!item || item.userId !== userId) {
+    
+    if (!item) {
+      console.error('[ITEMS] ❌ Item not found:', id);
       return res.status(404).json({ error: 'Item not found' });
     }
+    
+    if (item.userId !== userId) {
+      console.error('[ITEMS] ❌ Unauthorized. Item owner:', item.userId, 'User:', userId);
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    console.log(`[ITEMS] 💰 Updating: €${item.targetPrice} → €${price}`);
 
     // Update the target price
     const updatedItem = await updateItem(
@@ -189,18 +204,23 @@ router.patch('/:id/target-price', async (req, res) => {
       { itemId: id },
       'SET targetPrice = :targetPrice, updatedAt = :updatedAt',
       {
-        ':targetPrice': targetPrice,
+        ':targetPrice': price,
         ':updatedAt': new Date().toISOString()
       }
     );
 
-    console.log(`[ITEMS] Updated target price for ${id}: €${targetPrice}`);
+    console.log(`[ITEMS] ✅ Success! Updated ${id} to €${price}`);
     res.json(updatedItem);
 
   } catch (error) {
-    console.error('[ITEMS] Update error:', error);
-    res.status(500).json({ error: 'Failed to update target price' });
+    console.error('[ITEMS] ❌ Update error:', error.message);
+    console.error('[ITEMS] Stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to update target price',
+      details: error.message
+    });
   }
 });
 
+// ⚠️ THIS MUST BE AT THE VERY END
 module.exports = router;
