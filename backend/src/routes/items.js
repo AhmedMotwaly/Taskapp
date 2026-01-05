@@ -163,4 +163,44 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// ============================================
+// UPDATE TARGET PRICE
+// ============================================
+router.patch('/:id/target-price', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { targetPrice } = req.body;
+    const userId = req.user.userId;
+
+    // Validate input
+    if (typeof targetPrice !== 'number' || targetPrice < 0) {
+      return res.status(400).json({ error: 'Target price must be a positive number' });
+    }
+
+    // Verify ownership
+    const item = await getItem(TABLES.ITEMS, { itemId: id });
+    if (!item || item.userId !== userId) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Update the target price
+    const updatedItem = await updateItem(
+      TABLES.ITEMS,
+      { itemId: id },
+      'SET targetPrice = :targetPrice, updatedAt = :updatedAt',
+      {
+        ':targetPrice': targetPrice,
+        ':updatedAt': new Date().toISOString()
+      }
+    );
+
+    console.log(`[ITEMS] Updated target price for ${id}: €${targetPrice}`);
+    res.json(updatedItem);
+
+  } catch (error) {
+    console.error('[ITEMS] Update error:', error);
+    res.status(500).json({ error: 'Failed to update target price' });
+  }
+});
+
 module.exports = router;

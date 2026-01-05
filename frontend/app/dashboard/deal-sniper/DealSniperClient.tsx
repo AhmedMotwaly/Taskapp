@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch"; 
 import { Card, CardContent } from "@/components/ui/card";
-import { Trash2, ExternalLink, Loader2, ShoppingCart, Zap, ShoppingBag } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, ShoppingCart, Zap, ShoppingBag, Edit2, Check, X } from "lucide-react";
 
 export default function DealSniperClient() {
   const [items, setItems] = useState<any[]>([]);
@@ -18,6 +18,11 @@ export default function DealSniperClient() {
   const [previewData, setPreviewData] = useState<any>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+
+  // 🆕 Edit State
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editTargetPrice, setEditTargetPrice] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // USE THE REAL AWS BACKEND URL (Fallback to localhost for dev)
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -42,7 +47,7 @@ export default function DealSniperClient() {
     fetchItems();
   }, []);
 
-  // 2. Handle URL Paste (Auto-Preview) - WITH DEBUG
+  // 2. Handle URL Paste (Auto-Preview)
   const handlePreview = async () => {
     if (!url) return;
     setIsPreviewing(true);
@@ -58,14 +63,6 @@ export default function DealSniperClient() {
         body: JSON.stringify({ url })
       });
       const data = await res.json();
-      
-      // 🔥🔥🔥 CRITICAL DEBUG BLOCK 🔥🔥🔥
-      console.log('═══════════════════════════════════');
-      console.log('FRONTEND DEBUG - API Response:');
-      console.log('Price:', data.price, '| Type:', typeof data.price);
-      console.log('Full response:', data);
-      console.log('═══════════════════════════════════');
-      // 🔥🔥🔥 END DEBUG 🔥🔥🔥
       
       if (!res.ok) throw new Error("Failed to preview");
       
@@ -131,6 +128,59 @@ export default function DealSniperClient() {
     fetchItems();
   };
 
+  // 🆕 5. Start Editing Target Price
+  const startEditing = (item: any) => {
+    setEditingItemId(item.itemId);
+    setEditTargetPrice(item.targetPrice.toString());
+  };
+
+  // 🆕 6. Cancel Editing
+  const cancelEditing = () => {
+    setEditingItemId(null);
+    setEditTargetPrice("");
+  };
+
+  // 🆕 7. Save Updated Target Price
+  const handleUpdateTargetPrice = async (itemId: string) => {
+    const newPrice = parseFloat(editTargetPrice);
+    
+    if (isNaN(newPrice) || newPrice < 0) {
+      alert("Please enter a valid price");
+      return;
+    }
+
+    setIsUpdating(true);
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch(`${API_URL}/items/${itemId}/target-price`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ targetPrice: newPrice })
+      });
+
+      if (!res.ok) throw new Error("Failed to update");
+
+      // Update local state
+      setItems(items.map(item => 
+        item.itemId === itemId 
+          ? { ...item, targetPrice: newPrice } 
+          : item
+      ));
+
+      // Reset edit state
+      setEditingItemId(null);
+      setEditTargetPrice("");
+    } catch (err) {
+      alert("Error updating target price.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
@@ -153,7 +203,7 @@ export default function DealSniperClient() {
                   className="bg-black/20 border-white/10 text-white"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  onBlur={handlePreview} // Auto-preview when clicking away
+                  onBlur={handlePreview}
                 />
                 <Button variant="outline" onClick={handlePreview} disabled={isPreviewing} className="border-[#00f3ff] text-[#00f3ff] hover:bg-[#00f3ff]/10">
                   {isPreviewing ? <Loader2 className="animate-spin" /> : "Check"}
@@ -162,7 +212,7 @@ export default function DealSniperClient() {
             </div>
           </div>
 
-          {/* PREVIEW SECTION (Only shows after valid URL) */}
+          {/* PREVIEW SECTION */}
           {previewData && (
             <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex flex-col md:flex-row gap-6 animate-in zoom-in-95">
               {previewData.image && (
@@ -217,7 +267,7 @@ export default function DealSniperClient() {
         </CardContent>
       </Card>
 
-      {/* --- ITEMS GRID (REAL DATA) --- */}
+      {/* --- ITEMS GRID --- */}
       {loading ? (
         <div className="text-center text-[#00f3ff] py-10"><Loader2 className="animate-spin mx-auto" size={40}/></div>
       ) : items.length === 0 ? (
@@ -254,9 +304,47 @@ export default function DealSniperClient() {
                     <p className="text-xs text-gray-500 uppercase">Current</p>
                     <p className="text-xl font-mono text-white">€{item.lastPrice || "---"}</p>
                   </div>
+                  
+                  {/* 🆕 EDITABLE TARGET PRICE */}
                   <div className="text-right">
                     <p className="text-xs text-gray-500 uppercase">Target</p>
-                    <p className="text-xl font-mono text-[#00f3ff]">€{item.targetPrice}</p>
+                    
+                    {editingItemId === item.itemId ? (
+                      // EDIT MODE
+                      <div className="flex items-center justify-end gap-1 mt-1">
+                        <Input 
+                          type="number"
+                          value={editTargetPrice}
+                          onChange={(e) => setEditTargetPrice(e.target.value)}
+                          className="h-8 w-20 text-sm bg-black/30 border-[#00f3ff] text-white text-right"
+                          autoFocus
+                        />
+                        <button 
+                          onClick={() => handleUpdateTargetPrice(item.itemId)}
+                          disabled={isUpdating}
+                          className="text-green-500 hover:text-green-400 p-1"
+                        >
+                          {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                        </button>
+                        <button 
+                          onClick={cancelEditing}
+                          className="text-red-500 hover:text-red-400 p-1"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      // VIEW MODE
+                      <div className="flex items-center justify-end gap-2 group/edit">
+                        <p className="text-xl font-mono text-[#00f3ff]">€{item.targetPrice}</p>
+                        <button 
+                          onClick={() => startEditing(item)}
+                          className="opacity-0 group-hover/edit:opacity-100 text-gray-500 hover:text-[#00f3ff] transition-all"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 

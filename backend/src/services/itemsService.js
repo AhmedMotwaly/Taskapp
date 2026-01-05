@@ -35,3 +35,34 @@ const getAllItems = async () => {
 };
 
 module.exports = { addItem, getItems, deleteItemById, getAllItems };
+
+const updateTargetPrice = async (userId, itemId, newTargetPrice) => {
+  if (typeof newTargetPrice !== 'number' || newTargetPrice < 0) {
+    throw new Error('Target price must be a positive number');
+  }
+
+  const item = await getItem(TABLES.ITEMS, { itemId });
+  if (!item) throw new Error('Item not found');
+  if (item.userId !== userId) throw new Error('Unauthorized to update this item');
+
+  await updateItem(
+    TABLES.ITEMS,
+    { itemId },
+    'SET targetPrice = :targetPrice, updatedAt = :updatedAt',
+    {
+      ':targetPrice': newTargetPrice,
+      ':updatedAt': new Date().toISOString()
+    }
+  );
+
+  const updatedItem = await getItem(TABLES.ITEMS, { itemId });
+  return updatedItem;
+};
+
+module.exports = { 
+  addItem, 
+  getItems, 
+  deleteItemById, 
+  getAllItems,
+  updateTargetPrice // <-- Add this export
+};
