@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { putItem, queryItems, deleteItem, getItem, TABLES } = require('../models/dynamodb');
+const { putItem, queryItems, deleteItem, getItem, updateItem, TABLES } = require('../models/dynamodb');
 const { v4: uuidv4 } = require('uuid');
 const { fetchProductDetails } = require('../services/scraperService');
 const { getPlanConfig, isFeatureAllowed } = require('../config/plans');
