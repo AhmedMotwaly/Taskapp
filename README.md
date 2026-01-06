@@ -103,8 +103,6 @@ This isn't a tutorial follow-along project—it's a fully functional, EU-complia
 | **Zalando** | ✅ Active | Complex variant detection (v13.1) |
 | **eBay** | ✅ Active | Auction monitoring |
 | **MediaMarkt/Saturn** | ✅ Active | German electronics retailer |
-| **Adidas** | ✅ Active | Shell page detection |
-| **Nike** | ✅ Active | Anti-bot measures |
 | **Rossmann** | ✅ Active | German drugstore chain |
 | **Universal Scraper** | ✅ Active | Fallback for unsupported sites |
 
@@ -730,44 +728,10 @@ Does not match a registered redirect URI
 
 **Learning:** OAuth is environment-sensitive. Consistency across 3+ configuration points is critical.
 
----
-
-#### **Challenge 3: Adidas Anti-Bot Detection**
-
-**Problem:** Scraper returned shell pages with no product data:
-
-```javascript
-{
-  title: "adidas",
-  price: "€0.00",
-  available: false  // False positive!
-}
-```
-
-**Root Cause:** Adidas detects headless browsers and serves blank pages.
-
-**Solution Evolution:**
-
-```javascript
-// v1.0: Basic scraping (failed)
-const html = await page.content();
-
-// v3.0: Added waiting for dynamic content
-await page.waitForSelector('.product-price');
-
-// v5.2: Shell page detection (current)
-const hasImage = await page.$('img[alt*="product"]');
-const hasPrice = await page.$('.price-value');
-if (!hasImage || !hasPrice) {
-  throw new Error('Shell page detected');
-}
-```
-
-**Learning:** Modern e-commerce sites require multi-layer validation, not just content extraction.
 
 ---
 
-#### **Challenge 4: Auto Scaling Health Check Failures**
+#### **Challenge 3: Auto Scaling Health Check Failures**
 
 **Problem:** New EC2 instances launched but immediately marked unhealthy by ALB.
 
@@ -799,7 +763,7 @@ app.get('/health', (req, res) => {
 
 ---
 
-#### **Challenge 5: GitHub Actions Submodule Issues**
+#### **Challenge 4: GitHub Actions Submodule Issues**
 
 **Problem:**
 ```bash
