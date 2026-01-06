@@ -63,8 +63,8 @@ This isn't a tutorial follow-along project—it's a fully functional, EU-complia
 ## 🏗️ Architecture
 
 ### System Overview
-![Diagram](https://drive.google.com/uc?export=view&id=1cqMDc47pVORrqBFoSh3oRMB-EL9y_BTp) 
-```
+<img width="1849" height="1242" alt="Untitled Diagram drawio (1)" src="https://github.com/user-attachments/assets/cc9d1a17-8758-4729-95a6-9d49bae6c085" />
+
 ┌─────────────────────────────────────────────────────────────────┐
 │                         INTERNET                                 │
 │                    (End Users)                                   │
