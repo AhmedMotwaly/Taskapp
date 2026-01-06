@@ -63,7 +63,7 @@ This isn't a tutorial follow-along project—it's a fully functional, EU-complia
 ## 🏗️ Architecture
 
 ### System Overview
-
+[![Diagram](https://drive.google.com/file/d/1cqMDc47pVORrqBFoSh3oRMB-EL9y_BTp/view?usp=drive_link) 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         INTERNET                                 │
