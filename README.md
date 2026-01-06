@@ -990,6 +990,39 @@ I'm a career changer transitioning into cloud engineering after completing the C
 
 ---
 
+## ⚠️ Production Security Note
+
+While this repository is public for portfolio purposes:
+- ✅ All secrets use AWS Secrets Manager
+- ✅ No credentials are committed to Git
+- ✅ API keys are environment variables only
+- ✅ Database is in private subnet with security groups
+
+**The live site (autobuyguard.store) uses separate production 
+credentials not present in this repository.**
+
+---
+
+## 🔓 Open Source Portfolio Project
+
+This repository is intentionally public to:
+- ✅ Demonstrate real-world AWS architecture skills to recruiters
+- ✅ Contribute to the learning community
+- ✅ Showcase problem-solving and documentation abilities
+- ✅ Enable code review and feedback from senior engineers
+
+**Security:**
+All production secrets use AWS Secrets Manager. No credentials 
+are committed to this repository. See [ARCHITECTURE.md](ARCHITECTURE.md) 
+for security implementation details.
+
+**Note:** This is a portfolio project, not a commercial product. 
+The value isn't in the code itself—it's in the architectural 
+decisions, cost optimizations, and problem-solving journey 
+documented throughout this repository.
+
+---
+
 ## 📄 License
 
 This project is for portfolio demonstration purposes.
