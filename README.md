@@ -46,7 +46,7 @@ AutoBuy Guard provides automated monitoring with instant notifications:
 
 - **Deal Sniper Mode**: Tracks price drops below user-defined thresholds
 - **Restock Sniper Mode**: Monitors sold-out items and alerts when back in stock
-- **Multi-Platform Support**: Amazon, Zalando, eBay, MediaMarkt/Saturn, Adidas, Nike, Rossmann, and universal scraper for other sites
+- **Multi-Platform Support**: Amazon, Zalando, eBay, MediaMarkt/Saturn, Rossmann, and universal scraper for other sites
 
 ### Why This Matters
 
@@ -64,63 +64,6 @@ This isn't a tutorial follow-along project—it's a fully functional, EU-complia
 
 ### System Overview
 <img width="1849" height="1242" alt="Untitled Diagram drawio (1)" src="https://github.com/user-attachments/assets/cc9d1a17-8758-4729-95a6-9d49bae6c085" />
-
-┌─────────────────────────────────────────────────────────────────┐
-│                         INTERNET                                 │
-│                    (End Users)                                   │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-                   ┌─────────▼─────────┐
-                   │   Route 53 DNS    │
-                   │ autobuyguard.store│
-                   └────────┬──────────┘
-                            │
-              ┌─────────────┴─────────────┐
-              │                           │
-    ┌─────────▼──────────┐    ┌──────────▼─────────┐
-    │   CloudFront CDN   │    │  Application LB    │
-    │    (Frontend)      │    │   (Backend API)    │
-    │   d19gwjbn5vhz3u   │    │  taskapp-alb       │
-    └─────────┬──────────┘    └──────────┬─────────┘
-              │                           │
-    ┌─────────▼──────────┐    ┌──────────▼─────────┐
-    │   AWS Amplify      │    │  Auto Scaling      │
-    │   (Next.js Build)  │    │  Group (Min: 1)    │
-    │                    │    │  (Desired: 1)      │
-    └────────────────────┘    │  (Max: 3)          │
-                              └──────────┬─────────┘
-                                         │
-                              ┌──────────▼──────────┐
-                              │  EC2 Instances    │
-                              │  t2.micro         │
-                              │  Docker + Node.js │
-                              └──────────┬────────┘
-                                         │
-                       ┌─────────────────┼─────────────────┐
-                       │                 │                 │
-              ┌────────▼────────┐  ┌────▼─────┐  ┌───────▼────────┐
-              │  RDS MySQL      │  │ DynamoDB │  │  ECR Registry  │
-              │  db.t4g.micro   │  │ 5 Tables │  │ taskapp-backend│
-              │  10 GiB SSD     │  └──────────┘  └────────────────┘
-              └─────────────────┘
-                       │
-              ┌────────┴────────┐
-              │                 │
-       ┌──────▼──────┐   ┌─────▼──────┐   ┌──────────────┐
-       │   Secrets   │   │ CloudWatch │   │     SNS      │
-       │   Manager   │   │ Monitoring │   │Notifications │
-       └─────────────┘   └────────────┘   └──────────────┘
-
-VPC: 10.0.0.0/16 across 3 Availability Zones
-├── eu-central-1a: Public & Private Subnets
-├── eu-central-1b: Public & Private Subnets  
-└── eu-central-1c: Public & Private Subnets
-
-**Network Design:**
-- ALB: Public subnets (internet-facing)
-- EC2: Public subnets (cost optimization - no NAT Gateway)
-- RDS: Private subnets (secure, no internet access)
-```
 
 ### Infrastructure Highlights
 
