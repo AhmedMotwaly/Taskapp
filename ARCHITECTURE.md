@@ -781,7 +781,6 @@ Savings: $32/month (43% reduction)
 - [README.md](README.md) - Project overview
 - [DEMO.md](DEMO.md) - 5-minute quick demo
 - [CHALLENGES.md](CHALLENGES.md) - Problems solved
-- [INTERVIEW_PREP.md](INTERVIEW_PREP.md) - How to discuss this project
 
 ---
 
