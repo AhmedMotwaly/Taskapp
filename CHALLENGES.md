@@ -10,11 +10,10 @@
 
 - [Challenge 1: Next.js SSR Hydration Errors](#challenge-1-nextjs-ssr-hydration-errors)
 - [Challenge 2: OAuth2 Domain Mismatch](#challenge-2-oauth2-domain-mismatch)
-- [Challenge 3: Adidas Anti-Bot Detection](#challenge-3-adidas-anti-bot-detection)
-- [Challenge 4: Auto Scaling Health Check Failures](#challenge-4-auto-scaling-health-check-failures)
-- [Challenge 5: GitHub Actions Submodule Issues](#challenge-5-github-actions-submodule-issues)
-- [Challenge 6: NAT Gateway Cost Optimization](#challenge-6-nat-gateway-cost-optimization)
-- [Challenge 7: Zalando Variant Detection](#challenge-7-zalando-variant-detection)
+- [Challenge 3: Auto Scaling Health Check Failures](#challenge-4-auto-scaling-health-check-failures)
+- [Challenge 4: GitHub Actions Submodule Issues](#challenge-5-github-actions-submodule-issues)
+- [Challenge 5: NAT Gateway Cost Optimization](#challenge-6-nat-gateway-cost-optimization)
+- [Challenge 6: Zalando Variant Detection](#challenge-7-zalando-variant-detection)
 - [Key Lessons Learned](#key-lessons-learned)
 
 ---
@@ -266,178 +265,7 @@ git push origin main
 
 ---
 
-## 🔴 Challenge 3: Adidas Anti-Bot Detection
-
-### The Problem
-
-**Symptom:**  
-Scraper successfully fetched Adidas product pages but returned incorrect data:
-
-```javascript
-{
-  title: "adidas",
-  price: "€0.00",
-  available: false  // Should be true - product is in stock!
-}
-```
-
-**Context:**  
-Amazon and Zalando scrapers worked perfectly. Only Adidas returned blank data.
-
-### The Investigation
-
-**Step 1: Check Network Response**
-
-```bash
-curl https://www.adidas.de/some-product
-# Returns 200 OK with valid HTML
-```
-
-So the page is accessible. Not a network issue.
-
-**Step 2: Check Puppeteer Screenshot**
-
-```javascript
-await page.screenshot({ path: 'adidas-debug.png' });
-```
-
-**What I saw:**  
-A completely blank page with just the Adidas logo and "Loading..." text.
-
-**Hypothesis:** Adidas detects headless browsers and serves a "shell page" with no content.
-
-**Step 3: Test with Real Browser**
-
-Opened the same URL in Chrome DevTools:
-- Real browser: Full product page with price, images, add-to-cart button
-- Puppeteer: Blank shell page
-
-**Confirmed:** Anti-bot detection.
-
-### The Solution Evolution
-
-**Version 1.0: Basic Scraping (Failed)**
-```javascript
-async function scrapeAdidas(url) {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto(url);
-  
-  const html = await page.content();
-  // Parse HTML...
-  
-  // Result: Shell page, no data
-}
-```
-
-**Version 2.0: Add User Agent (Failed)**
-```javascript
-await page.setUserAgent('Mozilla/5.0 Chrome/...');
-// Still got shell page
-```
-
-**Version 3.0: Wait for Dynamic Content (Partial Success)**
-```javascript
-await page.goto(url);
-await page.waitForSelector('.product-price', { timeout: 10000 });
-// Sometimes worked, sometimes timeout
-```
-
-**Version 4.0: Add Puppeteer Stealth Plugin (Better)**
-```javascript
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-
-puppeteer.use(StealthPlugin());
-
-async function scrapeAdidas(url) {
-  const browser = await puppeteer.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-  
-  const page = await browser.newPage();
-  
-  // Stealth mode: Masks headless browser fingerprints
-  await page.goto(url, { waitUntil: 'networkidle2' });
-  
-  // Wait for price element
-  await page.waitForSelector('.product-price');
-  
-  // Extract data...
-}
-```
-
-**Success Rate:** ~70% (much better!)
-
-**Version 5.2: Shell Page Detection (Current - 90%+ Success)**
-```javascript
-async function scrapeAdidas(url) {
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-  
-  const page = await browser.newPage();
-  
-  // Stealth configuration
-  await page.setUserAgent('Mozilla/5.0...');
-  await page.setViewport({ width: 1920, height: 1080 });
-  
-  await page.goto(url, { 
-    waitUntil: 'networkidle2',
-    timeout: 30000 
-  });
-  
-  // Multi-layer validation: Check for shell page indicators
-  const hasProductImage = await page.$('img[alt*="product"]');
-  const hasPriceElement = await page.$('.product-price, .gl-price');
-  const hasAddToCartButton = await page.$('button[data-auto-id="add-to-bag"]');
-  
-  // If missing critical elements, it's a shell page
-  if (!hasProductImage || !hasPriceElement) {
-    throw new Error('Shell page detected - anti-bot active');
-  }
-  
-  // Extract data only if page is legitimate
-  const data = await page.evaluate(() => {
-    const price = document.querySelector('.product-price')?.textContent;
-    const title = document.querySelector('h1')?.textContent;
-    const available = document.querySelector('.add-to-bag-button') !== null;
-    
-    return { title, price, available };
-  });
-  
-  await browser.close();
-  return data;
-}
-```
-
-**Why This Works:**
-- **Puppeteer Stealth** masks headless browser fingerprints
-- **Multi-layer validation** ensures we got the real page
-- **Graceful failure** logs shell pages instead of returning bad data
-- **Retry mechanism** attempts 3 times before giving up
-
-### What I Learned
-
-1. **E-commerce sites are sophisticated**: They don't just block IPs, they detect behavioral patterns
-2. **Multi-layer validation is crucial**: Don't trust a single element check
-3. **Fail loudly on shell pages**: Better to report failure than return incorrect data
-4. **Bot detection evolves**: What works today might fail tomorrow (hence version 5.2!)
-5. **Respect robots.txt**: Stay within ethical scraping boundaries
-
-**Anti-Bot Detection Indicators:**
-- Blank pages despite 200 OK
-- Missing JavaScript-rendered content
-- Captcha challenges
-- Rate limiting (429 errors)
-
-**Time to Debug:** 12 hours (spread over 1 week, iterating through versions)  
-**Final Success Rate:** 90%+ on Adidas/Nike
-
----
-
-## 🔴 Challenge 4: Auto Scaling Health Check Failures
+## 🔴 Challenge 3: Auto Scaling Health Check Failures
 
 ### The Problem
 
@@ -652,7 +480,7 @@ aws cloudwatch put-metric-alarm \
 
 ---
 
-## 🔴 Challenge 5: GitHub Actions Submodule Issues
+## 🔴 Challenge 4: GitHub Actions Submodule Issues
 
 ### The Problem
 
@@ -810,7 +638,7 @@ Refresh GitHub → backend and frontend now show all files!
 
 ---
 
-## 🟡 Challenge 6: NAT Gateway Cost Optimization
+## 🟡 Challenge 5: NAT Gateway Cost Optimization
 
 ### The Problem
 
@@ -981,7 +809,7 @@ Use VPC Endpoints instead of NAT Gateway:
 
 ---
 
-## 🟡 Challenge 7: Zalando Variant Detection
+## 🟡 Challenge 6: Zalando Variant Detection
 
 ### The Problem
 
@@ -1138,7 +966,6 @@ async function scrapeZalando(url) {
 |-----------|--------------|----------|--------|
 | Next.js SSR Errors | 4 hours | Medium | User experience |
 | OAuth2 Domain | 6 hours | High | Complete login failure |
-| Adidas Anti-Bot | 12 hours | Medium | Scraper accuracy |
 | Health Check Failures | 2 hours | Critical | 15-minute outage |
 | GitHub Submodules | 3 hours | Low | Development workflow |
 | NAT Gateway Cost | 2 days | Medium | Budget overrun |
